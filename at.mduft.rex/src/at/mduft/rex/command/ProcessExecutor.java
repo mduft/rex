@@ -3,6 +3,7 @@
  */
 package at.mduft.rex.command;
 
+import java.io.File;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -41,15 +42,20 @@ public class ProcessExecutor implements InvertedShell {
     private final EnumSet<TtyOptions> ttyOptions;
     private final String clientRoot;
 
-    public ProcessExecutor(String[] command, String clientRoot, EnumSet<TtyOptions> options) {
+    private final String targetPwd;
+
+    public ProcessExecutor(String[] command, String clientRoot, String targetPwd,
+            EnumSet<TtyOptions> options) {
         this.command = command;
         this.ttyOptions = options;
         this.clientRoot = clientRoot;
+        this.targetPwd = targetPwd;
     }
 
     @Override
     public void start(Map<String, String> env) throws IOException {
-        String[] cmds = new CommandProcessor(clientRoot, env).process(command);
+        ArgumentProcessor proc = new ArgumentProcessor(clientRoot, env);
+        String[] cmds = proc.process(command);
         ProcessBuilder builder = new ProcessBuilder(cmds);
         if (env != null) {
             try {
@@ -58,6 +64,7 @@ public class ProcessExecutor implements InvertedShell {
                 log.info("Could not set environment for command", e);
             }
         }
+        builder.directory(new File(proc.transformPath(targetPwd, true)));
         log.info("starting '{}'", builder.command());
         if (log.isDebugEnabled()) {
             log.debug("Starting process with command: '{}' and env: {}", builder.command(),

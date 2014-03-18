@@ -4,14 +4,13 @@
 package at.mduft.rex;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.Parser;
-import org.apache.commons.cli.PosixParser;
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+
 import org.apache.sshd.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.slf4j.Logger;
@@ -23,56 +22,43 @@ import org.slf4j.LoggerFactory;
 public class Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final Options options;
+    private static final OptionParser PARSER;
+    private static final RexCommandFactory COMMAND_FACTORY = new RexCommandFactory();
 
     /** The default port used if no other is given */
     private static final int DEFAULT_PORT = 9000;
 
-    /** name of the option specifying the path to the authorized public key repository */
-    private static final String OPT_PUBKEYS = "pubkeys";
-
-    /** name of the option specifying the port the server should listen on */
-    private static final String OPT_PORT = "port";
-
-    /** name of the option specifying the (reusable) host key file */
-    private static final String OPT_HOSTKEY = "hostkey";
-
-    /** name of the option specifying the username that is allowed to connect */
-    private static final String OPT_USER = "user";
-
-    /** name of the option specifying the mount point/share directory of the shared storage */
-    private static final String OPT_ROOT = "root";
+    private static final ArgumentAcceptingOptionSpec<Integer> OPT_PORT;
+    private static final ArgumentAcceptingOptionSpec<File> OPT_PUBKEYS;
+    private static final ArgumentAcceptingOptionSpec<String> OPT_USER;
+    private static final ArgumentAcceptingOptionSpec<File> OPT_HOSTKEY;
+    private static final ArgumentAcceptingOptionSpec<File> OPT_ROOT;
 
     static {
-        options = new Options();
-        Option port = new Option("p", OPT_PORT, true, "The port to start the server on (default: "
-                + DEFAULT_PORT + ")");
-        Option pubKey = new Option(null, OPT_PUBKEYS, true,
-                "File containing authorized public keys");
-        Option hostKey = new Option(null, OPT_HOSTKEY, true,
-                "Host key file, created if it does not exist");
-        Option user = new Option(null, OPT_USER, true,
-                "User name required to be used by connecting clients. Clients cannot connect with any other user.");
-        Option root = new Option("r", OPT_ROOT, true,
-                "Path to mount point/share of common filesystem with client machines");
+        PARSER = new OptionParser();
 
-        hostKey.setRequired(true);
-        pubKey.setRequired(true);
-        user.setRequired(true);
-        root.setRequired(true);
-
-        pubKey.setArgName("authorized_keys2");
-        hostKey.setArgName("hostkey-file");
-        user.setArgName("permitted-user");
-
-        options.addOption(port);
-        options.addOption(pubKey);
-        options.addOption(hostKey);
-        options.addOption(user);
-        options.addOption(root);
+        OPT_PORT = PARSER.acceptsAll(Arrays.asList("port", "p"), "The port to start the server on")
+                .withRequiredArg().ofType(Integer.class).describedAs("port")
+                .defaultsTo(DEFAULT_PORT);
+        OPT_PUBKEYS = PARSER
+                .acceptsAll(Arrays.asList("pubkeys", "k"), "File containing authorized public keys")
+                .withRequiredArg().ofType(File.class).describedAs("pubkeys").required();
+        OPT_USER = PARSER
+                .acceptsAll(Arrays.asList("user", "u"),
+                        "User name required to be used by connecting clients. Clients cannot connect with any other user.")
+                .withRequiredArg().describedAs("username").defaultsTo("rex");
+        OPT_HOSTKEY = PARSER
+                .acceptsAll(Arrays.asList("hostkey", "h"),
+                        "Host key file, created if it does not exist").withRequiredArg()
+                .ofType(File.class).describedAs("hostkey-storage").required();
+        OPT_ROOT = PARSER
+                .acceptsAll(Arrays.asList("root", "r"),
+                        "Path to mount point/share of common filesystem with client machines")
+                .withRequiredArg().ofType(File.class).describedAs("root").required();
+        PARSER.acceptsAll(Arrays.asList("help", "?"), "show this help").forHelp();
     }
 
-    private static String serverRoot = null;
+    private static File serverRoot = null;
 
     /**
      * Main entry point into the application. Sets up global things and starts the SSH server. The
@@ -84,24 +70,24 @@ public class Main {
      *             in case of an unexpected error.
      */
     public static void main(String[] args) throws Exception {
-        int port = DEFAULT_PORT;
-
         // parse command line and print help in case we cannot.
-        CommandLine cli;
+        OptionSet opts;
         try {
-            Parser parser = new PosixParser();
-            cli = parser.parse(options, args);
+            opts = PARSER.parse(args);
+
+            if (opts.has("help")) {
+                PARSER.printHelpOn(System.out);
+                System.exit(0);
+            }
         } catch (Exception e) {
             log.info("error: " + e.toString());
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp(120, "Main", null, options, null, true);
             System.exit(-1);
             return;
         }
 
         // remember the server root mapping.
-        serverRoot = cli.getOptionValue(OPT_ROOT);
-        if (!new File(serverRoot).isDirectory()) {
+        serverRoot = opts.valueOf(OPT_ROOT);
+        if (!serverRoot.isDirectory()) {
             throw new IllegalArgumentException("server root directory must exist");
         }
 
@@ -109,32 +95,32 @@ public class Main {
         log.info("starting REX server");
         SshServer server = SshServer.setUpDefaultServer();
 
-        if (cli.hasOption(OPT_PORT)) {
-            port = Integer.parseInt(cli.getOptionValue(OPT_PORT));
-        }
-
-        File pubKeyFile = new File(cli.getOptionValue(OPT_PUBKEYS));
+        File pubKeyFile = opts.valueOf(OPT_PUBKEYS);
         if (!pubKeyFile.isFile()) {
             throw new IllegalArgumentException("argument not a file: " + pubKeyFile);
         }
-        PubKeyAuthenticator auth = new PubKeyAuthenticator(cli.getOptionValue(OPT_USER), pubKeyFile);
+        PubKeyAuthenticator auth = new PubKeyAuthenticator(opts.valueOf(OPT_USER), pubKeyFile);
         server.setPublickeyAuthenticator(auth);
 
-        server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(cli
-                .getOptionValue(OPT_HOSTKEY)));
+        server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(opts.valueOf(OPT_HOSTKEY)
+                .getAbsolutePath()));
 
         Map<String, String> props = server.getProperties();
         props.put(SshServer.AUTH_METHODS, "publickey");
         props.put(SshServer.SERVER_IDENTIFICATION, "REX-Service");
 
         server.setShellFactory(new RexShellFactory());
-        server.setCommandFactory(new RexCommandFactory());
+        server.setCommandFactory(COMMAND_FACTORY);
 
-        server.setPort(port);
+        server.setPort(opts.valueOf(OPT_PORT));
         server.start();
     }
 
-    public static String getServerRoot() {
+    public static File getServerRoot() {
         return serverRoot;
+    }
+
+    public static RexCommandFactory getCommandFactory() {
+        return COMMAND_FACTORY;
     }
 }

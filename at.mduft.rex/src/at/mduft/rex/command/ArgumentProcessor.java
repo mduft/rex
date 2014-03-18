@@ -4,23 +4,35 @@
 package at.mduft.rex.command;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import at.mduft.rex.Main;
 
 /**
- * The {@link CommandProcessor} is responsible for transforming a given command from client form to
+ * The {@link ArgumentProcessor} is responsible for transforming a given command from client form to
  * server form, taking into account the
  */
-public class CommandProcessor {
+public class ArgumentProcessor {
 
     private final Map<String, String> env;
     private final String clientRoot;
     private final String serverRoot;
 
-    public CommandProcessor(String clientRoot, Map<String, String> env) {
+    public ArgumentProcessor(String clientRoot, Map<String, String> env) {
         this.env = env;
-        this.clientRoot = clientRoot;
-        this.serverRoot = Main.getServerRoot();
+        String absRoot = Main.getServerRoot().getAbsolutePath();
+
+        if (absRoot.endsWith("/") || absRoot.endsWith("\\")) {
+            serverRoot = absRoot;
+        } else {
+            serverRoot = absRoot + "/";
+        }
+
+        if (clientRoot.endsWith("/") || clientRoot.endsWith("\\")) {
+            this.clientRoot = clientRoot;
+        } else {
+            this.clientRoot = clientRoot + "/";
+        }
     }
 
     /**
@@ -45,7 +57,7 @@ public class CommandProcessor {
             if ("$USER".equals(original[i])) {
                 cmds[i] = env.get("USER");
             } else {
-                cmds[i] = transformPath(original[i]);
+                cmds[i] = transformPath(original[i], true);
             }
         }
         return cmds;
@@ -56,11 +68,19 @@ public class CommandProcessor {
      * 
      * @param arg
      *            the argument to transform in client side style
+     * @param toServer
+     *            whether to convert from client to server or the other way round.
      * @return the transformed argument in server side style
      */
-    private String transformPath(String arg) {
-        if (arg.contains(clientRoot)) {
-            return arg.replace(clientRoot, serverRoot);
+    public String transformPath(String arg, boolean toServer) {
+        String source = toServer ? clientRoot : serverRoot;
+        String target = toServer ? serverRoot : clientRoot;
+
+        if (arg.contains(source)) {
+            Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);
+            String result = sourcePattern.matcher(arg).replaceFirst(target);
+            String style = target.contains("\\") ? "\\" : "/";
+            return result.replaceAll("[/\\\\]+", style);
         }
         return arg;
     }

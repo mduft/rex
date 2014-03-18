@@ -6,6 +6,6 @@
 	<classpathentry kind="lib" path="lib/sshd-core-0.10.1.jar" sourcepath="lib/apache-sshd-0.10.1-src.zip"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.6.jar" sourcepath="lib/slf4j-api-1.7.6-sources.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.6.jar" sourcepath="lib/slf4j-simple-1.7.6-sources.jar"/>
-	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar" sourcepath="lib/commons-cli-1.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jopt-simple-4.6.jar" sourcepath="lib/jopt-simple-4.6-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

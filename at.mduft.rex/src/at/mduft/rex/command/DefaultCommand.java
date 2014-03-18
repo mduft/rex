@@ -4,21 +4,23 @@
 package at.mduft.rex.command;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import at.mduft.rex.Main;
+import at.mduft.rex.RexCommandFactory;
 
 /**
  * The default {@link Command} that kicks in when everything else fails. This is either due to wrong
  * usage or due to an exception. In case an exception occured the messages the exception and all
  * it's causes are printed in the message passed to the client, along with the general information.
  */
-public class DefaultCommand implements Command {
-    private OutputStream err;
-    private ExitCallback exit;
+public class DefaultCommand extends SimpleCommand {
+    private static final Logger log = LoggerFactory.getLogger(DefaultCommand.class);
     private final Throwable exception;
 
     /**
@@ -42,7 +44,7 @@ public class DefaultCommand implements Command {
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public Integer call() {
         try {
             StringBuilder builder = new StringBuilder();
             builder.append("\r\n");
@@ -51,12 +53,19 @@ public class DefaultCommand implements Command {
             builder.append("\tLogin was successful, but you did not specify any (valid)\r\n");
             builder.append("\tcommand to execute. Following commands are available:\r\n");
             builder.append("\r\n");
-            builder.append("\t  exec --root=<root> <cmd...>\r\n");
-            builder.append("\t\t\texecutes the given command on the server machine.\r\n");
-            builder.append("\t\t\t'root' specifies the mount point of a common\r\n");
-            builder.append("\t\t\tfilesystem on the client machine. The according\r\n");
-            builder.append("\t\t\tmapping on the server has to be specified at startup\r\n");
-            builder.append("\t\t\tof the server process.\r\n");
+
+            RexCommandFactory commandFactory = Main.getCommandFactory();
+            for (Map.Entry<String, Class<? extends Command>> entry : commandFactory
+                    .getRegisteredCommands().entrySet()) {
+                builder.append('\t').append(entry.getKey()).append(":\r\n");
+                try {
+                    Method method = entry.getValue().getMethod("appendHelp", StringBuilder.class);
+                    method.invoke(null, builder);
+                } catch (Exception e) {
+                    builder.append("\t[error creating help for " + entry.getKey() + "]\r\n");
+                }
+                builder.append("\r\n");
+            }
 
             if (exception != null) {
                 builder.append("\r\n");
@@ -76,30 +85,10 @@ public class DefaultCommand implements Command {
             builder.append("\r\n");
             err.write(builder.toString().getBytes());
             err.flush();
-        } finally {
-            exit.onExit(127);
+        } catch (IOException e) {
+            log.debug(e.toString());
         }
+        return 1;
     }
 
-    @Override
-    public void setOutputStream(OutputStream out) {
-    }
-
-    @Override
-    public void setInputStream(InputStream in) {
-    }
-
-    @Override
-    public void setExitCallback(ExitCallback callback) {
-        this.exit = callback;
-    }
-
-    @Override
-    public void setErrorStream(OutputStream err) {
-        this.err = err;
-    }
-
-    @Override
-    public void destroy() {
-    }
 }

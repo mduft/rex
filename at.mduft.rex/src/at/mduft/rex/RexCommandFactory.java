@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import at.mduft.rex.command.DefaultCommand;
 import at.mduft.rex.command.ExecCommand;
+import at.mduft.rex.command.PathConvCommand;
 
 /**
  * Static command factory for REX commands. Each supported command has to be added here.
@@ -57,6 +58,7 @@ public class RexCommandFactory implements CommandFactory {
     static {
         commands = new HashMap<>();
         commands.put("exec", ExecCommand.class);
+        commands.put("path", PathConvCommand.class);
     }
 
     @Override
@@ -80,9 +82,26 @@ public class RexCommandFactory implements CommandFactory {
             // try without any parameter
             return cls.newInstance();
         } catch (Exception e) {
-            log.error("cannot create command " + cls.getName(), e);
+            log.error("cannot create command " + cls.getName());
+            Throwable current = e;
+            String indent = "  ";
+            while (current != null) {
+                log.error(indent + current.toString());
+                if (current.getCause() == current) {
+                    break;
+                }
+                current = current.getCause();
+                indent += "  ";
+            }
             return new DefaultCommand(e);
         }
+    }
+
+    /**
+     * @return all registered commands
+     */
+    public Map<String, Class<? extends Command>> getRegisteredCommands() {
+        return commands;
     }
 
     /**
@@ -92,7 +111,7 @@ public class RexCommandFactory implements CommandFactory {
      *            the command as a single string.
      * @return the command split into separate parts.
      */
-    public static String[] splitAndCleanCommand(String command) {
+    private static String[] splitAndCleanCommand(String command) {
         if (command == null || command.isEmpty()) {
             return new String[0];
         }

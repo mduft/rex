@@ -5,8 +5,14 @@ package at.mduft.rex.command;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
+
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Environment;
@@ -16,18 +22,34 @@ import org.apache.sshd.server.shell.ProcessShellFactory.TtyOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import at.mduft.rex.util.CrNlHelpFormatter;
+
 /**
  * Command that allows execution of any command inside the shared file system on the server.
  */
 public class ExecCommand extends InvertedShellWrapper {
 
     private static final Logger log = LoggerFactory.getLogger(ExecCommand.class);
-    private static final String ROOT_ARG = "--root=";
+    private static final OptionParser PARSER;
     private static final EnumSet<TtyOptions> TTY_UNIX = EnumSet.of(TtyOptions.ONlCr);
     private static final EnumSet<TtyOptions> TTY_WIN32 = EnumSet.of(TtyOptions.Echo,
             TtyOptions.ICrNl, TtyOptions.ONlCr);
+
     private ExitCallback exit;
     private OutputStream err;
+    private static ArgumentAcceptingOptionSpec<String> OPT_ROOT;
+    private static ArgumentAcceptingOptionSpec<String> OPT_PWD;
+
+    static {
+        PARSER = new OptionParser();
+        PARSER.formatHelpWith(CrNlHelpFormatter.INSTANCE);
+
+        OPT_ROOT = PARSER.accepts("root", "mount point of the shared filesystem on the client")
+                .withRequiredArg().describedAs("path").required();
+        OPT_PWD = PARSER
+                .accepts("pwd", "path within mount point to set as current working directory")
+                .withRequiredArg().describedAs("dir").required();
+    }
 
     public ExecCommand(String[] command) {
         super(createExecutor(command));
@@ -35,36 +57,23 @@ public class ExecCommand extends InvertedShellWrapper {
 
     /**
      * Creates a {@link ProcessExecutor} that is capable of handling execution of the given command.
-     * The input command /must/ be in format <code>exec --root=... [real command ...]</code>.
      * 
      * @param command
      *            the command as passed to the SSH server, split at argument boundaries.
      * @return the executor that is able to execute the given command.
      */
     private static ProcessExecutor createExecutor(String[] command) {
-        String clientRoot = null;
-
-        if (command.length < 3) {
-            throw new IllegalArgumentException("not a valid command string, missing argument(s)");
+        // argument 0 == exec, otherwise we would not be here...
+        if (command.length < 1 || !"exec".equals(command[0])) {
+            throw new IllegalArgumentException("missing string 'exec' in first argument");
         }
 
-        if (!"exec".equals(command[0])) {
-            throw new IllegalArgumentException("command string must start with 'exec'");
-        }
+        OptionSet opts = PARSER.parse(Arrays.copyOfRange(command, 1, command.length));
 
-        if (!command[1].startsWith(ROOT_ARG)) {
-            throw new IllegalArgumentException("exec must be followed by " + ROOT_ARG);
-        }
-
-        clientRoot = command[1].substring(ROOT_ARG.length());
-
-        if (clientRoot == null) {
-            throw new IllegalArgumentException("cannot find " + ROOT_ARG
-                    + " argument in command line from client");
-        }
-
-        return new ProcessExecutor(Arrays.copyOfRange(command, 2, command.length), clientRoot,
-                OsUtils.isUNIX() ? TTY_UNIX : TTY_WIN32);
+        List<?> nonOpts = opts.nonOptionArguments();
+        return new ProcessExecutor(nonOpts.toArray(new String[nonOpts.size()]),
+                opts.valueOf(OPT_ROOT), opts.valueOf(OPT_PWD), OsUtils.isUNIX() ? TTY_UNIX
+                        : TTY_WIN32);
     }
 
     @Override
@@ -89,6 +98,13 @@ public class ExecCommand extends InvertedShellWrapper {
             c.setErrorStream(err);
             c.setExitCallback(exit);
             c.start(env);
+        }
+    }
+
+    public static void appendHelp(StringBuilder builder) throws IOException {
+        try (StringWriter wr = new StringWriter()) {
+            PARSER.printHelpOn(wr);
+            builder.append(wr.toString());
         }
     }
 }
