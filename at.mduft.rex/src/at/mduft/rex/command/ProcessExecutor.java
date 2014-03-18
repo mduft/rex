@@ -58,8 +58,11 @@ public class ProcessExecutor implements InvertedShell {
                 log.info("Could not set environment for command", e);
             }
         }
-        log.debug("Starting process with command: '{}' and env: {}", builder.command(),
-                builder.environment());
+        log.info("starting '{}'", builder.command());
+        if (log.isDebugEnabled()) {
+            log.debug("Starting process with command: '{}' and env: {}", builder.command(),
+                    builder.environment());
+        }
         process = builder.start();
         out = new TtyFilterInputStream(process.getInputStream());
         err = new TtyFilterInputStream(process.getErrorStream());

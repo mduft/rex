@@ -45,7 +45,7 @@ public class ExecCommand extends InvertedShellWrapper {
         String clientRoot = null;
 
         if (command.length < 3) {
-            throw new IllegalArgumentException("not a valid command string.");
+            throw new IllegalArgumentException("not a valid command string, missing argument(s)");
         }
 
         if (!"exec".equals(command[0])) {
