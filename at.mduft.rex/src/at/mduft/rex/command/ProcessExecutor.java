@@ -55,6 +55,19 @@ public class ProcessExecutor implements InvertedShell {
     @Override
     public void start(Map<String, String> env) throws IOException {
         ArgumentProcessor proc = new ArgumentProcessor(clientRoot, env);
+
+        if (!proc.isPathInJail(command[0])) {
+            throw new IllegalArgumentException(
+                    "it is not allowed to escape prison (executable must be within " + clientRoot
+                            + ")!");
+        }
+
+        if (!proc.isPathAbsolute(targetPwd) || !proc.isPathInJail(targetPwd)) {
+            throw new IllegalArgumentException(
+                    "it is not allowed to escape prison (current directory must be within "
+                            + clientRoot + ")!");
+        }
+
         String[] cmds = proc.process(command);
         ProcessBuilder builder = new ProcessBuilder(cmds);
         if (env != null) {

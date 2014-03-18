@@ -21,19 +21,8 @@ public class ArgumentProcessor {
 
     public ArgumentProcessor(String clientRoot, Map<String, String> env) {
         this.env = env;
-        String absRoot = Main.getServerRoot().getAbsolutePath();
-
-        if (absRoot.endsWith("/") || absRoot.endsWith("\\")) {
-            serverRoot = absRoot;
-        } else {
-            serverRoot = absRoot + "/";
-        }
-
-        if (clientRoot.endsWith("/") || clientRoot.endsWith("\\")) {
-            this.clientRoot = clientRoot;
-        } else {
-            this.clientRoot = clientRoot + "/";
-        }
+        this.serverRoot = Main.getServerRoot().getAbsolutePath();
+        this.clientRoot = clientRoot;
     }
 
     /**
@@ -47,17 +36,6 @@ public class ArgumentProcessor {
      * @return the transformed parts of the command line.
      */
     public String[] process(String[] original) {
-        if (original[0] == null || original[0].isEmpty()) {
-            throw new IllegalArgumentException("command to execute is null or empty");
-        }
-
-        if ((original[0].charAt(0) == '/' || (original[0].length() > 2 && original[0].charAt(1) == ':'))
-                && !original[0].startsWith(clientRoot)) {
-            throw new IllegalArgumentException(
-                    "it is not allowed to escape prison (command to execute must be within "
-                            + clientRoot + ")!");
-        }
-
         String[] cmds = new String[original.length];
         for (int i = 0; i < cmds.length; i++) {
             if ("$USER".equals(original[i])) {
@@ -67,6 +45,36 @@ public class ArgumentProcessor {
             }
         }
         return cmds;
+    }
+
+    /**
+     * Checks whether the given path is inside the jail (inside the common shared filesystem).
+     * 
+     * @param the
+     *            path to check
+     * @return <code>true</code> if the path is in the jail, <code>false</code> otherwise
+     */
+    public boolean isPathInJail(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+
+        if (isPathAbsolute(path) && !path.startsWith(clientRoot)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a path is absolute or not, either in windows and UNIX style.
+     * 
+     * @param path
+     *            the path to check
+     * @return whether the path looks absolute in one world or the other.
+     */
+    public boolean isPathAbsolute(String path) {
+        return path.charAt(0) == '/' || (path.length() > 2 && path.charAt(1) == ':');
     }
 
     /**
@@ -80,7 +88,7 @@ public class ArgumentProcessor {
      */
     public String transformPath(String arg, boolean toServer) {
         String source = toServer ? clientRoot : serverRoot;
-        String target = toServer ? serverRoot : clientRoot;
+        String target = toServer ? serverRoot + "/" : clientRoot + "/";
 
         if (arg.contains(source)) {
             Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);

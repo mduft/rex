@@ -3,6 +3,7 @@
  */
 package at.mduft.rex.command;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -11,15 +12,17 @@ import java.util.Arrays;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import joptsimple.OptionSpecBuilder;
 import at.mduft.rex.util.CrNlHelpFormatter;
 
 public class PathConvCommand extends SimpleCommand {
 
     private static final OptionParser PARSER;
     private final OptionSet opts;
-    private static ArgumentAcceptingOptionSpec<String> OPT_ROOT;
-    private static ArgumentAcceptingOptionSpec<String> OPT_TOSERVER;
-    private static ArgumentAcceptingOptionSpec<String> OPT_TOCLIENT;
+    private static final ArgumentAcceptingOptionSpec<String> OPT_ROOT;
+    private static final ArgumentAcceptingOptionSpec<String> OPT_TOSERVER;
+    private static final ArgumentAcceptingOptionSpec<String> OPT_TOCLIENT;
+    private static final OptionSpecBuilder OPT_CHECKSERVER;
 
     static {
         PARSER = new OptionParser();
@@ -33,6 +36,8 @@ public class PathConvCommand extends SimpleCommand {
                 .acceptsAll(Arrays.asList("to-server", "s"),
                         "paths to be converted to server format").withRequiredArg()
                 .describedAs("client-path,...").withValuesSeparatedBy(',');
+        OPT_CHECKSERVER = PARSER.acceptsAll(Arrays.asList("check-exists", "e"),
+                "check whether the path on the server exists. prefixes result with '!' if not.");
         OPT_TOCLIENT = PARSER
                 .acceptsAll(Arrays.asList("to-client", "c"),
                         "paths to be converted to client format").withRequiredArg()
@@ -48,7 +53,14 @@ public class PathConvCommand extends SimpleCommand {
         ArgumentProcessor proc = new ArgumentProcessor(opts.valueOf(OPT_ROOT), null);
         try (PrintWriter wr = new PrintWriter(out)) {
             for (String x : opts.valuesOf(OPT_TOSERVER)) {
-                wr.println(proc.transformPath(x, true));
+                String path = proc.transformPath(x, true);
+                if (opts.has(OPT_CHECKSERVER)) {
+                    File f = new File(path);
+                    if (!f.exists()) {
+                        wr.print('!');
+                    }
+                }
+                wr.println(path);
             }
             for (String x : opts.valuesOf(OPT_TOCLIENT)) {
                 wr.println(proc.transformPath(x, false));
