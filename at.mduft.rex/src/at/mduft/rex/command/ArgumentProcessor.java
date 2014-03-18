@@ -4,6 +4,7 @@
 package at.mduft.rex.command;
 
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import at.mduft.rex.Main;
@@ -46,7 +47,12 @@ public class ArgumentProcessor {
      * @return the transformed parts of the command line.
      */
     public String[] process(String[] original) {
-        if (!original[0].contains(clientRoot)) {
+        if (original[0] == null || original[0].isEmpty()) {
+            throw new IllegalArgumentException("command to execute is null or empty");
+        }
+
+        if ((original[0].charAt(0) == '/' || (original[0].length() > 2 && original[0].charAt(1) == ':'))
+                && !original[0].startsWith(clientRoot)) {
             throw new IllegalArgumentException(
                     "it is not allowed to escape prison (command to execute must be within "
                             + clientRoot + ")!");
@@ -78,9 +84,10 @@ public class ArgumentProcessor {
 
         if (arg.contains(source)) {
             Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);
-            String result = sourcePattern.matcher(arg).replaceFirst(target);
+            String result = sourcePattern.matcher(arg).replaceFirst(
+                    Matcher.quoteReplacement(target));
             String style = target.contains("\\") ? "\\" : "/";
-            return result.replaceAll("[/\\\\]+", style);
+            return result.replaceAll("[/\\\\]+", Matcher.quoteReplacement(style));
         }
         return arg;
     }
