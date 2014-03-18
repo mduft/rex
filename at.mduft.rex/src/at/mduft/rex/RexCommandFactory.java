@@ -4,8 +4,12 @@
 package at.mduft.rex;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -22,6 +26,31 @@ public class RexCommandFactory implements CommandFactory {
 
     private static final Logger log = LoggerFactory.getLogger(RexCommandFactory.class);
 
+    /**
+     * Pattern that is capable of dealing with complex command line quoting and escaping. This can
+     * recognize correctly:
+     * <ul>
+     * <li>"double quoted strings"
+     * <li>'single quoted strings'
+     * <li>"escaped \"quotes within\" quoted string"
+     * <li>C:\paths\like\this or "C:\path like\this"
+     * <li>--arguments=like_this or "--args=like this" or '--args=like this' or --args="like this"
+     * or --args='like this'
+     * <li>quoted\ whitespaces\\t (spaces & tabs)
+     * <li>and probably more :)
+     * </ul>
+     */
+    private static final Pattern CLI_CRACKER = Pattern.compile(
+            "[^\\s]*\"(\\\\+\"|[^\"])*?\"|[^\\s]*'(\\\\+'|[^'])*?'|(\\\\\\s|[^\\s])+",
+            Pattern.MULTILINE);
+
+    /**
+     * Cleans out quotes that are not escaped. Also removes single backslashes that quote a
+     * whitespace.
+     */
+    private static final Pattern CLI_UNQUOTER = Pattern.compile(
+            "(?<!\\\\)[\"']|(?<!\\\\)\\\\(?=\\s)", Pattern.MULTILINE);
+
     /** stores all supported commands, each being instantiated freshly for each request. */
     private static final Map<String, Class<? extends Command>> commands;
 
@@ -32,7 +61,7 @@ public class RexCommandFactory implements CommandFactory {
 
     @Override
     public Command createCommand(String command) {
-        String[] args = splitCommand(command);
+        String[] args = splitAndCleanCommand(command);
 
         Class<? extends Command> cls = commands.get(args[0]);
         if (cls == null) {
@@ -63,9 +92,18 @@ public class RexCommandFactory implements CommandFactory {
      *            the command as a single string.
      * @return the command split into separate parts.
      */
-    private String[] splitCommand(String command) {
-        // TODO: better splitting (quoting, ...)
-        return command.split(" ");
+    public static String[] splitAndCleanCommand(String command) {
+        if (command == null || command.isEmpty()) {
+            return new String[0];
+        }
+
+        List<String> cracked = new ArrayList<>();
+        Matcher matcher = CLI_CRACKER.matcher(command);
+        while (matcher.find()) {
+            String unquoted = CLI_UNQUOTER.matcher(matcher.group()).replaceAll("");
+            cracked.add(unquoted.replace("\\\\", "\\"));
+        }
+        return cracked.toArray(new String[cracked.size()]);
     }
 
 }
