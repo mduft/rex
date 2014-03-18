@@ -10,8 +10,7 @@ Used & bundled third party libraries
 
 The following libraries are used (and re-packed into the final JAR). Please see their respective licenses for more information.
 
- * commons-cli-1.2.jar          (Apache Commons CLI)
- * mina-core-2.0.7.jar          (Apache MINA Core)
+ * jopt-simple-4.6.jar          (--jopt-simple)
  * slf4j-api-1.7.6.jar          (SLF4J API)
  * slf4j-simple-1.7.6.jar       (SLF4J Simple Logger)
  * sshd-core-0.10.1.jar         (Apache MINA SSHD Core)
