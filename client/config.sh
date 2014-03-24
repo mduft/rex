@@ -11,4 +11,4 @@ REX_ROOT=/big/rex
 #   default will transfer all environment variables to the server to allow
 #   for PATH expansions, etc. Otherwise you will only have the default env
 #   of the server.
-SSH="ssh -o SendEnv='*'"
+SSH="ssh -o SendEnv=*"
