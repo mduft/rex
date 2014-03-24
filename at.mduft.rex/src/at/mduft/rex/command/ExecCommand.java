@@ -32,8 +32,8 @@ public class ExecCommand extends InvertedShellWrapper {
     private static final Logger log = LoggerFactory.getLogger(ExecCommand.class);
     private static final OptionParser PARSER;
     private static final EnumSet<TtyOptions> TTY_UNIX = EnumSet.of(TtyOptions.ONlCr);
-    private static final EnumSet<TtyOptions> TTY_WIN32 = EnumSet.of(TtyOptions.Echo,
-            TtyOptions.ICrNl, TtyOptions.ONlCr);
+    private static final EnumSet<TtyOptions> TTY_WIN32 = EnumSet.of(TtyOptions.ICrNl,
+            TtyOptions.ONlCr);
 
     private ExitCallback exit;
     private OutputStream err;

@@ -28,6 +28,9 @@ public class Main {
     /** The default port used if no other is given */
     private static final int DEFAULT_PORT = 9000;
 
+    /** high idle timeout (for master connections) - 60 minutes */
+    private static final int IDLE_MASTER_TIMEOUT = 60 * 60 * 1000;
+
     private static final ArgumentAcceptingOptionSpec<Integer> OPT_PORT;
     private static final ArgumentAcceptingOptionSpec<File> OPT_PUBKEYS;
     private static final ArgumentAcceptingOptionSpec<String> OPT_USER;
@@ -108,6 +111,7 @@ public class Main {
         Map<String, String> props = server.getProperties();
         props.put(SshServer.AUTH_METHODS, "publickey");
         props.put(SshServer.SERVER_IDENTIFICATION, "REX-Service");
+        props.put(SshServer.IDLE_TIMEOUT, Integer.toString(IDLE_MASTER_TIMEOUT));
 
         server.setShellFactory(new RexShellFactory());
         server.setCommandFactory(COMMAND_FACTORY);
