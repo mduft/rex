@@ -51,6 +51,10 @@ public class ProcessExecutor implements InvertedShell {
         this.clientRoot = clientRoot;
         this.targetPwd = targetPwd;
 
+        if (command == null || command.length < 1) {
+            throw new IllegalArgumentException("no command given");
+        }
+
         if (!ArgumentProcessor.isPathAbsolute(clientRoot)) {
             throw new IllegalArgumentException("client root must be an absolute path");
         }
@@ -72,11 +76,12 @@ public class ProcessExecutor implements InvertedShell {
                             + clientRoot + ")!");
         }
 
-        String[] cmds = proc.processArguments(command);
+        String[] cmds = proc.processArguments(command, targetPwd);
         ProcessBuilder builder = new ProcessBuilder(cmds);
         if (env != null) {
             try {
                 builder.environment().putAll(env);
+                proc.processEnvironment(builder.environment());
             } catch (Exception e) {
                 log.info("Could not set environment for command", e);
             }

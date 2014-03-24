@@ -3,9 +3,15 @@
  */
 package at.mduft.rex.command;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.sshd.common.util.OsUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import at.mduft.rex.Main;
 
@@ -15,6 +21,9 @@ import at.mduft.rex.Main;
  */
 public class ArgumentProcessor {
 
+    private static final Logger log = LoggerFactory.getLogger(ArgumentProcessor.class);
+
+    private static final String VAR_PATH = "PATH";
     private final Map<String, String> env;
     private final String clientRoot;
     private final String serverRoot;
@@ -25,17 +34,38 @@ public class ArgumentProcessor {
         this.clientRoot = clientRoot;
     }
 
+    public boolean isServerWindows() {
+        return OsUtils.isWin32();
+    }
+
+    public boolean isClientWindows() {
+        return clientRoot.contains(":"); // path must be absolute, so if it contains a : it must be
+                                         // windows.
+    }
+
+    public String getClientPathSep() {
+        return isClientWindows() ? ";" : ":";
+    }
+
+    public String getServerPathSep() {
+        return isServerWindows() ? ";" : ":";
+    }
+
     /**
      * Process the given command line parts to exchange client side information with their server
      * side counterparts. Most work done here deals with fixing paths in command line arguments to
      * reflect the file path on the server that "means" the same as the original string on the
      * client.
+     * <p>
+     * Note that all given arguments are client relative, not server!
      * 
      * @param original
      *            the original command line
+     * @param the
+     *            current working directory
      * @return the transformed parts of the command line.
      */
-    public String[] processArguments(String[] original) {
+    public String[] processArguments(String[] original, String pwd) {
         String[] cmds = new String[original.length];
         for (int i = 0; i < cmds.length; i++) {
             if ("$USER".equals(original[i])) {
@@ -43,6 +73,10 @@ public class ArgumentProcessor {
             } else {
                 cmds[i] = transformPath(original[i], true);
             }
+        }
+
+        if (cmds[0].startsWith(".")) {
+            cmds[0] = transformPath(pwd + cmds[0].substring(1), true);
         }
         return cmds;
     }
@@ -55,7 +89,45 @@ public class ArgumentProcessor {
      *            the environment to process.
      */
     public void processEnvironment(Map<String, String> environment) {
-        // TODO:
+        // only PATH is valid. windows may set and use path with different case.
+        Set<String> badVars = new HashSet<>();
+        for (Map.Entry<String, String> entry : environment.entrySet()) {
+            String key = entry.getKey();
+            if (key.equalsIgnoreCase(VAR_PATH) && !key.equals(VAR_PATH)) {
+                badVars.add(key);
+            }
+        }
+
+        for (String bad : badVars) {
+            environment.remove(bad);
+        }
+
+        processPath(environment);
+    }
+
+    private void processPath(Map<String, String> environment) {
+        String serverPath = System.getenv(VAR_PATH);
+        String clientPath = environment.get(VAR_PATH);
+
+        if (clientPath == null || clientPath.isEmpty()) {
+            environment.put(VAR_PATH, serverPath); // use default path only
+        }
+
+        StringBuilder finalPath = new StringBuilder(serverPath);
+        String clientPaths[] = clientPath.split(getClientPathSep());
+        for (String p : clientPaths) {
+            if (p == null || p.isEmpty()) {
+                continue;
+            }
+
+            if (isPathInJail(p)) {
+                finalPath.append(getServerPathSep()).append(transformPath(p, true));
+            } else {
+                log.debug("skip out-of-jail PATH member: " + p);
+            }
+        }
+
+        environment.put(VAR_PATH, finalPath.toString());
     }
 
     /**
