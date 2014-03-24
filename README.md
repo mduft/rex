@@ -42,11 +42,11 @@ Performance Tuning
 
 To get better connection speeds through SSH, you can setup a persistent control connection. To do so, put this on the client machine in the file *~/.ssh/config* for the user connecting:
 
-`
+```
 Host <IP_OR_HOSTNAME_OF_REX_SERVER>
     ControlPath ~/.ssh/sockets/%l-%r@%h:%p
     ControlMaster auto
     ControlPersist yes
-`
+```
 
 Make sure *~/.ssh/sockets* exists.
