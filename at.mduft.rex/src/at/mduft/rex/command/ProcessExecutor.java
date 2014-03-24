@@ -50,6 +50,10 @@ public class ProcessExecutor implements InvertedShell {
         this.ttyOptions = options;
         this.clientRoot = clientRoot;
         this.targetPwd = targetPwd;
+
+        if (!ArgumentProcessor.isPathAbsolute(clientRoot)) {
+            throw new IllegalArgumentException("client root must be an absolute path");
+        }
     }
 
     @Override
@@ -62,13 +66,13 @@ public class ProcessExecutor implements InvertedShell {
                             + ")!");
         }
 
-        if (!proc.isPathAbsolute(targetPwd) || !proc.isPathInJail(targetPwd)) {
+        if (!ArgumentProcessor.isPathAbsolute(targetPwd) || !proc.isPathInJail(targetPwd)) {
             throw new IllegalArgumentException(
                     "it is not allowed to escape prison (current directory must be within "
                             + clientRoot + ")!");
         }
 
-        String[] cmds = proc.process(command);
+        String[] cmds = proc.processArguments(command);
         ProcessBuilder builder = new ProcessBuilder(cmds);
         if (env != null) {
             try {
@@ -79,10 +83,6 @@ public class ProcessExecutor implements InvertedShell {
         }
         builder.directory(new File(proc.transformPath(targetPwd, true)));
         log.info("starting '{}'", builder.command());
-        if (log.isDebugEnabled()) {
-            log.debug("Starting process with command: '{}' and env: {}", builder.command(),
-                    builder.environment());
-        }
         process = builder.start();
         out = new TtyFilterInputStream(process.getInputStream());
         err = new TtyFilterInputStream(process.getErrorStream());

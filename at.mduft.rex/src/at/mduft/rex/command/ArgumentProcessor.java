@@ -35,7 +35,7 @@ public class ArgumentProcessor {
      *            the original command line
      * @return the transformed parts of the command line.
      */
-    public String[] process(String[] original) {
+    public String[] processArguments(String[] original) {
         String[] cmds = new String[original.length];
         for (int i = 0; i < cmds.length; i++) {
             if ("$USER".equals(original[i])) {
@@ -45,6 +45,17 @@ public class ArgumentProcessor {
             }
         }
         return cmds;
+    }
+
+    /**
+     * Process the given environment, exchanging client side paths with server side ones where
+     * applicable.
+     * 
+     * @param environment
+     *            the environment to process.
+     */
+    public void processEnvironment(Map<String, String> environment) {
+        // TODO:
     }
 
     /**
@@ -73,7 +84,7 @@ public class ArgumentProcessor {
      *            the path to check
      * @return whether the path looks absolute in one world or the other.
      */
-    public boolean isPathAbsolute(String path) {
+    public static boolean isPathAbsolute(String path) {
         return path.charAt(0) == '/' || (path.length() > 2 && path.charAt(1) == ':');
     }
 
