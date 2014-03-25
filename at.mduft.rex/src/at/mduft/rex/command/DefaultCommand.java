@@ -5,6 +5,7 @@ package at.mduft.rex.command;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 
 import org.apache.sshd.server.Command;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import at.mduft.rex.Main;
 import at.mduft.rex.RexCommandFactory;
+import at.mduft.rex.util.HelpAppender;
 
 /**
  * The default {@link Command} that kicks in when everything else fails. This is either due to wrong
@@ -58,12 +60,7 @@ public class DefaultCommand extends SimpleCommand {
             for (Map.Entry<String, Class<? extends Command>> entry : commandFactory
                     .getRegisteredCommands().entrySet()) {
                 builder.append('\t').append(entry.getKey()).append(":\r\n");
-                try {
-                    Method method = entry.getValue().getMethod("appendHelp", StringBuilder.class);
-                    method.invoke(null, builder);
-                } catch (Exception e) {
-                    builder.append("\t[error creating help for " + entry.getKey() + "]\r\n");
-                }
+                appendHelpForClass(builder, entry);
                 builder.append("\r\n");
             }
 
@@ -89,6 +86,37 @@ public class DefaultCommand extends SimpleCommand {
             log.debug(e.toString());
         }
         return 1;
+    }
+
+    private void appendHelpForClass(StringBuilder builder,
+            Map.Entry<String, Class<? extends Command>> entry) {
+        boolean haveIt = false;
+        for (Method m : entry.getValue().getMethods()) {
+            HelpAppender app = m.getAnnotation(HelpAppender.class);
+            if (app != null) {
+                if (!Modifier.isStatic(m.getModifiers())) {
+                    throw new RuntimeException("@HelpAppender not static: " + m);
+                }
+
+                Class<?>[] types = m.getParameterTypes();
+                if (types.length != 1 || !types[0].equals(StringBuilder.class)) {
+                    throw new RuntimeException(
+                            "@HelpAppender parameter type mismatch, must be one argument of type StringBuilder");
+                }
+
+                try {
+                    m.invoke(null, builder);
+                } catch (Exception e) {
+                    log.error("cannot invoke help appender", e);
+                    continue;
+                }
+                haveIt = true;
+                break;
+            }
+        }
+        if (!haveIt) {
+            builder.append("\t[no help for " + entry.getKey() + "]\r\n");
+        }
     }
 
 }

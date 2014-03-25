@@ -21,32 +21,50 @@ import at.mduft.rex.Main;
  */
 public class ArgumentProcessor {
 
+    private static final Pattern SLASH_FIXER = Pattern.compile("[/\\\\]+");
+
     private static final Logger log = LoggerFactory.getLogger(ArgumentProcessor.class);
 
     private static final String VAR_PATH = "PATH";
-    private final Map<String, String> env;
     private final String clientRoot;
     private final String serverRoot;
 
-    public ArgumentProcessor(String clientRoot, Map<String, String> env) {
-        this.env = env;
+    /**
+     * Creates a new {@link ArgumentProcessor} for the given client root and the given environment.
+     * 
+     * @param clientRoot
+     *            the client's path to the common file system mount point.
+     */
+    public ArgumentProcessor(String clientRoot) {
         this.serverRoot = Main.getServerRoot().getAbsolutePath();
         this.clientRoot = clientRoot;
     }
 
+    /**
+     * @return whether the REX server is running on windows
+     */
     public boolean isServerWindows() {
         return OsUtils.isWin32();
     }
 
+    /**
+     * @return whether the connected client is running on windows
+     */
     public boolean isClientWindows() {
         return clientRoot.contains(":"); // path must be absolute, so if it contains a : it must be
                                          // windows.
     }
 
+    /**
+     * @return the separator for path lists in environment variables on the client.
+     */
     public String getClientPathSep() {
         return isClientWindows() ? ";" : ":";
     }
 
+    /**
+     * @return the separator for path lists in environment variables on the server.
+     */
     public String getServerPathSep() {
         return isServerWindows() ? ";" : ":";
     }
@@ -61,11 +79,15 @@ public class ArgumentProcessor {
      * 
      * @param original
      *            the original command line
-     * @param the
-     *            current working directory
+     * @param pwd
+     *            the current working directory
+     * @param env
+     *            the unprocessed environment. will be processed (path conversions, ...)
      * @return the transformed parts of the command line.
      */
-    public String[] processArguments(String[] original, String pwd) {
+    public String[] process(String[] original, String pwd, Map<String, String> env) {
+        processEnvironment(env);
+
         String[] cmds = new String[original.length];
         for (int i = 0; i < cmds.length; i++) {
             if ("$USER".equals(original[i])) {
@@ -88,7 +110,7 @@ public class ArgumentProcessor {
      * @param environment
      *            the environment to process.
      */
-    public void processEnvironment(Map<String, String> environment) {
+    private void processEnvironment(Map<String, String> environment) {
         // only PATH is valid. windows may set and use path with different case.
         Set<String> badVars = new HashSet<>();
         for (Map.Entry<String, String> entry : environment.entrySet()) {
@@ -105,6 +127,12 @@ public class ArgumentProcessor {
         processPath(environment);
     }
 
+    /**
+     * Cleans up the PATH variable.
+     * 
+     * @param environment
+     *            the environment to process.
+     */
     private void processPath(Map<String, String> environment) {
         String serverPath = System.getenv(VAR_PATH);
         String clientPath = environment.get(VAR_PATH);
@@ -174,12 +202,24 @@ public class ArgumentProcessor {
         String source = toServer ? clientRoot : serverRoot;
         String target = toServer ? serverRoot + "/" : clientRoot + "/";
 
-        if (arg.contains(source)) {
-            Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);
-            String result = sourcePattern.matcher(arg).replaceFirst(
-                    Matcher.quoteReplacement(target));
-            String style = target.contains("\\") ? "\\" : "/";
-            return result.replaceAll("[/\\\\]+", Matcher.quoteReplacement(style));
+        Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);
+        Matcher matcher = sourcePattern.matcher(arg);
+        if (matcher.find()) {
+            String result = matcher.replaceFirst(Matcher.quoteReplacement(target));
+            String style = Matcher.quoteReplacement(target.contains("\\") ? "\\" : "/");
+
+            Matcher slash = SLASH_FIXER.matcher(result);
+            boolean hasSlash = slash.find(matcher.start());
+            if (hasSlash) {
+                StringBuffer builder = new StringBuffer();
+                do {
+                    slash.appendReplacement(builder, style);
+                    hasSlash = slash.find();
+                } while (hasSlash);
+                slash.appendTail(builder);
+                result = builder.toString();
+            }
+            return result;
         }
         return arg;
     }

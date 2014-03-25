@@ -14,6 +14,9 @@ import org.apache.sshd.server.ExitCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Simple base class for commands that can be represented as a {@link Callable}.
+ */
 public abstract class SimpleCommand implements Command, Callable<Integer> {
 
     private static final Logger log = LoggerFactory.getLogger(SimpleCommand.class);

@@ -35,15 +35,13 @@ public class RexCommandFactory implements CommandFactory {
      * <li>'single quoted strings'
      * <li>"escaped \"quotes within\" quoted string"
      * <li>C:\paths\like\this or "C:\path like\this"
-     * <li>--arguments=like_this or "--args=like this" or '--args=like this' or --args="like this"
-     * or --args='like this'
+     * <li>--arguments=like_this or "--args=like this" or '--args=like this'
      * <li>quoted\ whitespaces\\t (spaces & tabs)
      * <li>and probably more :)
      * </ul>
      */
     private static final Pattern CLI_CRACKER = Pattern.compile(
-            "[^\\s]*\"(\\\\+\"|[^\"])*?\"|[^\\s]*'(\\\\+'|[^'])*?'|(\\\\\\s|[^\\s])+",
-            Pattern.MULTILINE);
+            "\"(\\\\+\"|[^\"])*?\"|'(\\\\+'|[^'])*?'|(\\\\\\s|[^\\s])+", Pattern.MULTILINE);
 
     /**
      * Cleans out quotes that are not escaped. Also removes single backslashes that quote a

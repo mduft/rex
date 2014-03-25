@@ -17,15 +17,18 @@ import joptsimple.OptionSet;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.shell.InvertedShell;
 import org.apache.sshd.server.shell.InvertedShellWrapper;
 import org.apache.sshd.server.shell.ProcessShellFactory.TtyOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import at.mduft.rex.util.CrNlHelpFormatter;
+import at.mduft.rex.util.HelpAppender;
 
 /**
- * Command that allows execution of any command inside the shared file system on the server.
+ * Command that allows execution of any command inside the shared file system on the server. Extends
+ * {@link InvertedShellWrapper} to be able to sneak a custom {@link InvertedShell} into it.
  */
 public class ExecCommand extends InvertedShellWrapper {
 
@@ -51,6 +54,13 @@ public class ExecCommand extends InvertedShellWrapper {
                 .withRequiredArg().describedAs("dir").required();
     }
 
+    /**
+     * Creates a new {@link ExecCommand}. This will create the {@link ProcessExecutor} and pass it
+     * to the {@link InvertedShellWrapper} base. This might throw an Exception.
+     * 
+     * @param command
+     *            the raw command line passed from the client.
+     */
     public ExecCommand(String[] command) {
         super(createExecutor(command));
     }
@@ -101,6 +111,7 @@ public class ExecCommand extends InvertedShellWrapper {
         }
     }
 
+    @HelpAppender
     public static void appendHelp(StringBuilder builder) throws IOException {
         try (StringWriter wr = new StringWriter()) {
             PARSER.printHelpOn(wr);

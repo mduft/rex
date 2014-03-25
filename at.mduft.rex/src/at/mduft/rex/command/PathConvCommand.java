@@ -14,7 +14,11 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
 import at.mduft.rex.util.CrNlHelpFormatter;
+import at.mduft.rex.util.HelpAppender;
 
+/**
+ * Command that will convert paths from client to server format and vice versa.
+ */
 public class PathConvCommand extends SimpleCommand {
 
     private static final OptionParser PARSER;
@@ -44,13 +48,19 @@ public class PathConvCommand extends SimpleCommand {
                 .describedAs("server-path,...").withValuesSeparatedBy(',');
     }
 
+    /**
+     * Creates a new {@link PathConvCommand} with the given raw arguments from the client.
+     * 
+     * @param arguments
+     *            the raw arguments containing the operation to perform.
+     */
     public PathConvCommand(String[] arguments) {
         this.opts = PARSER.parse(arguments);
     }
 
     @Override
     public Integer call() throws Exception {
-        ArgumentProcessor proc = new ArgumentProcessor(opts.valueOf(OPT_ROOT), null);
+        ArgumentProcessor proc = new ArgumentProcessor(opts.valueOf(OPT_ROOT));
         try (PrintWriter wr = new PrintWriter(out)) {
             for (String x : opts.valuesOf(OPT_TOSERVER)) {
                 String path = proc.transformPath(x, true);
@@ -70,6 +80,7 @@ public class PathConvCommand extends SimpleCommand {
         return 0;
     }
 
+    @HelpAppender
     public static void appendHelp(StringBuilder builder) throws IOException {
         try (StringWriter wr = new StringWriter()) {
             PARSER.printHelpOn(wr);

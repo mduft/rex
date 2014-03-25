@@ -33,24 +33,79 @@ public class ProcessExecutor implements InvertedShell {
 
     private static final Logger log = LoggerFactory.getLogger(ProcessExecutor.class);
 
+    /** the process or null if not yet executing */
     private Process process;
+
+    /** servers input side, connected to process' stdout */
     private TtyFilterOutputStream in;
+
+    /** servers output side, connected to process' stdin */
     private TtyFilterInputStream out;
+
+    /** servers error side, connected to process' stderr */
     private TtyFilterInputStream err;
 
+    /** the raw command passed by the client */
     private final String[] command;
+
+    /** the {@link TtyOptions} used for the streams connected to the process */
     private final EnumSet<TtyOptions> ttyOptions;
+
+    /** the client relative path to the common filesystem mount point */
     private final String clientRoot;
 
-    private final String targetPwd;
+    /** the current working directory on the client */
+    private final String clientPwd;
 
-    public ProcessExecutor(String[] command, String clientRoot, String targetPwd,
+    private final ArgumentProcessor proc;
+
+    /**
+     * Creates a new {@link ProcessExecutor}.
+     * 
+     * @param command
+     *            the command to execute. has to be at least of length 1
+     * @param clientRoot
+     *            the (absolute!) path on the client to the shared filesystem
+     * @param clientPwd
+     *            the (client) current working directory. must be within the shared filesystem
+     * @param options
+     *            the {@link TtyOptions} to be used for streams.
+     */
+    public ProcessExecutor(String[] command, String clientRoot, String clientPwd,
             EnumSet<TtyOptions> options) {
         this.command = command;
         this.ttyOptions = options;
         this.clientRoot = clientRoot;
-        this.targetPwd = targetPwd;
+        this.clientPwd = clientPwd;
+        this.proc = new ArgumentProcessor(clientRoot);
+    }
 
+    @Override
+    public void start(Map<String, String> env) throws IOException {
+        checkSetup(proc);
+
+        ProcessBuilder builder = new ProcessBuilder();
+        if (env != null) {
+            builder.environment().putAll(env);
+        }
+        String[] cmds = proc.process(command, clientPwd, builder.environment());
+        builder.command(cmds);
+        builder.directory(new File(proc.transformPath(clientPwd, true)));
+
+        log.info("starting '{}'", builder.command());
+        process = builder.start();
+        out = new TtyFilterInputStream(process.getInputStream());
+        err = new TtyFilterInputStream(process.getErrorStream());
+        in = new TtyFilterOutputStream(process.getOutputStream(), err);
+    }
+
+    /**
+     * Verifies that the current setup is ok to be executed.
+     * 
+     * @param proc
+     *            the {@link ArgumentProcessor} used to check constraints.
+     */
+    private void checkSetup(ArgumentProcessor proc) {
         if (command == null || command.length < 1) {
             throw new IllegalArgumentException("no command given");
         }
@@ -58,11 +113,6 @@ public class ProcessExecutor implements InvertedShell {
         if (!ArgumentProcessor.isPathAbsolute(clientRoot)) {
             throw new IllegalArgumentException("client root must be an absolute path");
         }
-    }
-
-    @Override
-    public void start(Map<String, String> env) throws IOException {
-        ArgumentProcessor proc = new ArgumentProcessor(clientRoot, env);
 
         if (!proc.isPathInJail(command[0])) {
             throw new IllegalArgumentException(
@@ -70,28 +120,11 @@ public class ProcessExecutor implements InvertedShell {
                             + ")!");
         }
 
-        if (!ArgumentProcessor.isPathAbsolute(targetPwd) || !proc.isPathInJail(targetPwd)) {
+        if (!ArgumentProcessor.isPathAbsolute(clientPwd) || !proc.isPathInJail(clientPwd)) {
             throw new IllegalArgumentException(
                     "it is not allowed to escape prison (current directory must be within "
                             + clientRoot + ")!");
         }
-
-        String[] cmds = proc.processArguments(command, targetPwd);
-        ProcessBuilder builder = new ProcessBuilder(cmds);
-        if (env != null) {
-            try {
-                builder.environment().putAll(env);
-                proc.processEnvironment(builder.environment());
-            } catch (Exception e) {
-                log.info("Could not set environment for command", e);
-            }
-        }
-        builder.directory(new File(proc.transformPath(targetPwd, true)));
-        log.info("starting '{}'", builder.command());
-        process = builder.start();
-        out = new TtyFilterInputStream(process.getInputStream());
-        err = new TtyFilterInputStream(process.getErrorStream());
-        in = new TtyFilterOutputStream(process.getOutputStream(), err);
     }
 
     @Override
@@ -142,6 +175,9 @@ public class ProcessExecutor implements InvertedShell {
         }
     }
 
+    /**
+     * Copy of {@link ProcessShell}s {@code TtyFilterInputStream}.
+     */
     protected class TtyFilterInputStream extends FilterInputStream {
         private Buffer buffer;
         private int lastChar;
@@ -200,6 +236,9 @@ public class ProcessExecutor implements InvertedShell {
         }
     }
 
+    /**
+     * Copy of {@link ProcessShell}s {@code TtyFilterOutputStream}.
+     */
     protected class TtyFilterOutputStream extends FilterOutputStream {
         private final TtyFilterInputStream echo;
 
