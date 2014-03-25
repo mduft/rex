@@ -111,6 +111,7 @@ public class ArgumentProcessor {
 
         if (clientPath == null || clientPath.isEmpty()) {
             environment.put(VAR_PATH, serverPath); // use default path only
+            return;
         }
 
         StringBuilder finalPath = new StringBuilder(serverPath);
