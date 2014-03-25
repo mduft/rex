@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <title>Rex by mduft</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>Rex</h1>
+        <h2>Remote EXecution Service - SSH based remote execution agent</h2>
+
+        <section id="downloads">
+          <a href="https://github.com/mduft/rex/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/mduft/rex/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/mduft/rex" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h1>
+<a name="rex" class="anchor" href="#rex"><span class="octicon octicon-link"></span></a>REX</h1>
+
+<p>Remote EXecution Service - A SSH based remote execution agent that allows to execute non-native binaries on shared filesystem remotely on another architecture (fex. run windows binaries from linux, executing on native windows).</p>
+
+<p>Each server and each client has a "root" offset that is to be configured as command line argument. These prefixes are used to transform paths from the client to the server.</p>
+
+<p>Here is a demo of REX in action: <a href="http://www.youtube.com/watch?v=GGsWSY1oJVw">http://www.youtube.com/watch?v=GGsWSY1oJVw</a></p>
+
+<h1>
+<a name="used--bundled-third-party-libraries" class="anchor" href="#used--bundled-third-party-libraries"><span class="octicon octicon-link"></span></a>Used &amp; bundled third party libraries</h1>
+
+<p>The following libraries are used (and re-packed into the final JAR). Please see their respective licenses for more information.</p>
+
+<ul>
+<li>jopt-simple-4.6.jar          (--jopt-simple)</li>
+<li>slf4j-api-1.7.6.jar          (SLF4J API)</li>
+<li>slf4j-simple-1.7.6.jar       (SLF4J Simple Logger)</li>
+<li>sshd-core-0.10.1.jar         (Apache MINA SSHD Core)</li>
+</ul><h1>
+<a name="quickstart-guide" class="anchor" href="#quickstart-guide"><span class="octicon octicon-link"></span></a>QuickStart Guide</h1>
+
+<p>You need to configure both server and client correctly for remote execution to succeed. Prerequisite is that ther is a filesystem that is reachable from both machines using a certain path. In the following
+example I just shared the drive C: on a Windows VM, and mounted it using CIFS on the Linux host.</p>
+
+<h2>
+<a name="start-the-server" class="anchor" href="#start-the-server"><span class="octicon octicon-link"></span></a>Start the Server</h2>
+
+<p>Make sure you have Java7 installed. Then run the server jar file like this from a command prompt</p>
+
+<p><code>java -jar at.mduft.rex.jar --pubkeys=C:\REX\pubkeys.txt --hostkey=C:\REX\hostkey.txt --root=C:\ --user=rex</code></p>
+
+<p>For more information on what the arguments mean, try <strong><em>--help</em></strong>. Make sure <em>C:\REX</em> exists. Put at least one public key (RSA or DSA) into the <em>C:\REX\pubkeys.txt</em> file that is authorized to connect. The file will be monitored for changes at runtime, so adding additional keys does not require a server restart.</p>
+
+<p>Make sure the argument to <strong><em>--root</em></strong> points to the servers mount point for the shared filesystem. Note that only executables that reside on this shared filesystem or are reachable through the default system path can be executed through REX.</p>
+
+<h2>
+<a name="use-the-client" class="anchor" href="#use-the-client"><span class="octicon octicon-link"></span></a>Use the Client</h2>
+
+<p>Read client/README.md for information on how to configure the client. Basically after filling out some information in config.sh you should be able to cd to the client root directory and execute <code>/path/to/rex/client/binfmt-misc.sh /path/to/client/root/exe.exe</code>. You can set PATH on the client to point to directories containing windows binaries (fex. <code>PATH=${PATH}:/path/to/root/C/Windows:/path/to/root/C/Windows/System32</code>) and execute them without path (fex. <code>/path/to/rex/client/binfmt-misc.sh cmd.exe</code>).</p>
+
+<h1>
+<a name="performance-tuning" class="anchor" href="#performance-tuning"><span class="octicon octicon-link"></span></a>Performance Tuning</h1>
+
+<p>To get better connection speeds through SSH, you can setup a persistent control connection. To do so, put this on the client machine in the file <em>~/.ssh/config</em> for the user connecting:</p>
+
+<pre><code>Host &lt;IP_OR_HOSTNAME_OF_REX_SERVER&gt;
+    ControlPath ~/.ssh/sockets/%l-%r@%h:%p
+    ControlMaster auto
+    ControlPersist yes
+</code></pre>
+
+<p>Make sure <em>~/.ssh/sockets</em> exists.</p>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
