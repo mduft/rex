@@ -5,6 +5,8 @@ Remote EXecution Service - A SSH based remote execution agent that allows to exe
 
 Each server and each client has a "root" offset that is to be configured as command line argument. These prefixes are used to transform paths from the client to the server.
 
+Here is a demo of REX in action: http://www.youtube.com/watch?v=GGsWSY1oJVw
+
 Used & bundled third party libraries
 ====================================
 
