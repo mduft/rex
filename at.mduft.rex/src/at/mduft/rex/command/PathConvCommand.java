@@ -70,10 +70,12 @@ public class PathConvCommand extends SimpleCommand {
                         wr.print('!');
                     }
                 }
-                wr.println(path);
+                wr.print(path);
+                wr.print('\n');
             }
             for (String x : opts.valuesOf(OPT_TOCLIENT)) {
-                wr.println(proc.transformPath(x, false));
+                wr.print(proc.transformPath(x, false));
+                wr.print('\n');
             }
         }
 
