@@ -10,11 +10,5 @@ if [[ ${EXEC_DIR} != ${REX_ROOT}* ]]; then
     exit 1
 fi
 
-# assure propper quoting
-args=()
-for arg in "$@"; do
-    args[${#args[@]}]="'${arg}'"
-done
-
 ${SSH} ${REX_USER}@${REX_SERVER} -p ${REX_PORT} exec --root="${REX_ROOT}" --pwd="${EXEC_DIR}" "${args[@]}"
 

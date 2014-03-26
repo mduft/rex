@@ -12,3 +12,10 @@ REX_ROOT=/big/rex
 #   for PATH expansions, etc. Otherwise you will only have the default env
 #   of the server.
 SSH="ssh -o SendEnv=*"
+
+# Wrangle arguments so they are available in a quoted form for the scripts
+# to use when calling through SSH.
+args=()
+for arg in "$@"; do
+    args[${#args[@]}]="'${arg}'"
+done

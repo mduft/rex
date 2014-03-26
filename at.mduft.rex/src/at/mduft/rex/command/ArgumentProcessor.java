@@ -3,9 +3,9 @@
  */
 package at.mduft.rex.command;
 
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,11 +21,11 @@ import at.mduft.rex.Main;
  */
 public class ArgumentProcessor {
 
-    private static final Pattern SLASH_FIXER = Pattern.compile("[/\\\\]+");
-
     private static final Logger log = LoggerFactory.getLogger(ArgumentProcessor.class);
-
+    private static final Pattern SLASH_FIXER = Pattern.compile("[/\\\\]+");
     private static final String VAR_PATH = "PATH";
+    private static final List<String> BAD_VARS = Arrays.asList("TMP", "TEMP");
+
     private final String clientRoot;
     private final String serverRoot;
 
@@ -83,10 +83,13 @@ public class ArgumentProcessor {
      *            the current working directory
      * @param env
      *            the unprocessed environment. will be processed (path conversions, ...)
+     * @param targetEnv
+     *            the target environment to copy processed variables to.
      * @return the transformed parts of the command line.
      */
-    public String[] process(String[] original, String pwd, Map<String, String> env) {
-        processEnvironment(env);
+    public String[] process(String[] original, String pwd, Map<String, String> env,
+            Map<String, String> targetEnv) {
+        processEnvironment(env, targetEnv);
 
         String[] cmds = new String[original.length];
         for (int i = 0; i < cmds.length; i++) {
@@ -110,21 +113,20 @@ public class ArgumentProcessor {
      * @param environment
      *            the environment to process.
      */
-    private void processEnvironment(Map<String, String> environment) {
+    private void processEnvironment(Map<String, String> environment, Map<String, String> target) {
         // only PATH is valid. windows may set and use path with different case.
-        Set<String> badVars = new HashSet<>();
         for (Map.Entry<String, String> entry : environment.entrySet()) {
             String key = entry.getKey();
             if (key.equalsIgnoreCase(VAR_PATH) && !key.equals(VAR_PATH)) {
-                badVars.add(key);
+                continue;
+            }
+
+            if (!BAD_VARS.contains(key)) {
+                target.put(key, entry.getValue());
             }
         }
 
-        for (String bad : badVars) {
-            environment.remove(bad);
-        }
-
-        processPath(environment);
+        processPath(target);
     }
 
     /**
