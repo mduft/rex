@@ -114,7 +114,7 @@ public class ArgumentProcessor {
      *            the environment to process.
      */
     private void processEnvironment(Map<String, String> environment, Map<String, String> target) {
-        // only PATH is valid. windows may set and use path with different case.
+        // only PATH is valid. windows sets and uses path with different case. merge them
         for (Map.Entry<String, String> entry : environment.entrySet()) {
             String key = entry.getKey();
             if (key.equalsIgnoreCase(VAR_PATH) && !key.equals(VAR_PATH)) {

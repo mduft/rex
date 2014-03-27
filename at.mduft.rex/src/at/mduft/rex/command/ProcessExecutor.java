@@ -85,9 +85,6 @@ public class ProcessExecutor implements InvertedShell {
         checkSetup(proc);
 
         ProcessBuilder builder = new ProcessBuilder();
-        if (env != null) {
-            builder.environment().putAll(env);
-        }
         String[] cmds = proc.process(command, clientPwd, env, builder.environment());
         builder.command(cmds);
         builder.directory(new File(proc.transformPath(clientPwd, true)));
