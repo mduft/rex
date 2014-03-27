@@ -10,5 +10,5 @@ if [[ ${EXEC_DIR} != ${REX_ROOT}* ]]; then
     exit 1
 fi
 
-${SSH} ${REX_USER}@${REX_SERVER} -p ${REX_PORT} exec --root="${REX_ROOT}" --pwd="${EXEC_DIR}" "${args[@]}"
+${SSH} ${REX_USER}@${REX_SERVER} -p ${REX_PORT} exec --root="${REX_ROOT}" --pwd="${EXEC_DIR}" -- "${args[@]}"
 
