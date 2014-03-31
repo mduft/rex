@@ -154,7 +154,7 @@ public class ArgumentProcessor {
             if (isPathInJail(p)) {
                 finalPath.append(getServerPathSep()).append(transformPath(p, true));
             } else {
-                log.debug("skip out-of-jail PATH member: " + p);
+                log.trace("skip out-of-jail PATH member: " + p);
             }
         }
 

@@ -159,7 +159,9 @@ public class ProcessExecutor implements InvertedShell {
             return -1;
         }
         try {
-            return process.waitFor();
+            int status = process.waitFor();
+            log.info(command[0] + " done, status=" + status);
+            return status;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
