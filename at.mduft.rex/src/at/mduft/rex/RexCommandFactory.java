@@ -5,6 +5,7 @@ package at.mduft.rex;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class RexCommandFactory implements CommandFactory {
             // try without any parameter
             return cls.newInstance();
         } catch (Exception e) {
-            log.error("cannot create command " + cls.getName());
+            log.error("cannot create command " + cls.getName() + " for: " + Arrays.asList(args));
             Throwable current = e;
             String indent = "  ";
             while (current != null) {
