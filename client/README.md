@@ -21,3 +21,21 @@ To register the binfmt-misc handler with linux:
 `echo ":REXbat:E::bat::/path/to/binfmt-misc.sh:" > /proc/sys/fs/binfmt_misc/register`
 
 Be aware that the extension for .cmd and .bat are case sensitive! So you might need more.
+
+Sharing a filesystem
+====================
+
+There are several tricky things in getting to a propper shared filesystem. The way
+I did this in my experiments is, to share C:\ on a windows host and mount that using
+CIFS on Linux. I also experimented with NFS, but CIFS had less problems, although
+it was harder to configure properly.
+
+On the client, I was using mount options `rw,noserverino,cache=none`. This however
+does NOT disable all caches. The lookup cache still remains, that will cache directory
+contents, and refresh at most once a second or so. To disable the lookup cache you
+have to (as root):
+
+ echo 0 > /proc/fs/cifs/LookupCacheEnabled
+
+This will result in minimum roundtrips slightly below 100ms from call to return with
+a file existing on the client that was created on the server.
