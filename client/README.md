@@ -39,3 +39,44 @@ have to (as root):
 
 This will result in minimum roundtrips slightly below 100ms from call to return with
 a file existing on the client that was created on the server.
+
+Symbolic links when sharing a filesystem
+========================================
+
+(NOTE: a better way of overcoming this issues is described in the next (new) chapter)
+
+SMB/CIFS can not currently do symlinks on mounts served from windows (please prove
+me wrong!). To overcome this (as symlinks are often required in builds, etc.), the
+only current solution is a "criss-cross" mount. Let me illustrate this.
+
+The Windows machine shares drive C: as 'C'.  
+The Linux machine mounts this share to '/mnt/C' to have access to all the binaries.  
+The Windows machine creates an empty directory 'C:\work'
+The Linux machine bind-mounts a local directory ('/work') to '/mnt/C/work'.  
+The Windows machine deteles the empty directory 'C:\work'
+The Linux machine shares '/work', so that the windows host has access to it.  
+The Windows machine symlinks the 'work' share to C:\work using
+`mklink /d C:\work \\server\work`
+
+Now both machines see the same filesystem consistently, where all of it resides on
+the windows machine, /except/ for the 'work' folder, which resides on linux and is
+shared to the windows machine.
+
+This mechanism opens up another bunch of caches, this time on the windows side. To
+be able to interact on a file basis in realtime, you will have to tune those caches
+dramatically. Useful information can be found here:
+ http://technet.microsoft.com/en-us/library/ff686200(v=ws.10).aspx
+
+I suggest deactivating the directory cache by setting 
+`HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime` to 0
+
+Sharing multiple filesystems
+============================
+
+To overcome issues with mounting, symlinks, etc. it may be necessary to share multiple filesystems, one
+mounted on the server, one mounted on the client. To be able to do so, REX accepts multiple root mappings
+in the current version. This can be configured in config.sh like
+
+ REX_ROOTS='C:\;/some/path,F:\;/another/path'
+
+All paths in '/some/path/...' will be mapped to 'C:\...', etc.

@@ -3,4 +3,4 @@
 HOME=$(cd $(dirname $0); pwd)
 . ${HOME}/config.sh
 
-${SSH} ${REX_USER}@${REX_SERVER} -p ${REX_PORT} path --root="${REX_ROOT}" --to-client "${args[@]}"
+${SSH} ${REX_USER}@${REX_SERVER} -p ${REX_PORT} path --roots="${REX_ROOTS}" --to-client "${args[@]}"

@@ -3,7 +3,7 @@
 REX_SERVER=172.28.8.174
 REX_PORT=9000
 REX_USER=rex
-REX_ROOT=/big/rex
+REX_ROOTS='C:\;/big/rex,F:\;/ssd/tools'
 
 # ATTENTION: all scripts use this variable to assure that the SSH options
 #   are the same for all connections. This is essential when sharing connections
