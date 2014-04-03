@@ -35,7 +35,6 @@ public class Main {
     private static final ArgumentAcceptingOptionSpec<File> OPT_PUBKEYS;
     private static final ArgumentAcceptingOptionSpec<String> OPT_USER;
     private static final ArgumentAcceptingOptionSpec<File> OPT_HOSTKEY;
-    private static final ArgumentAcceptingOptionSpec<File> OPT_ROOT;
 
     static {
         PARSER = new OptionParser();
@@ -54,14 +53,8 @@ public class Main {
                 .acceptsAll(Arrays.asList("hostkey", "h"),
                         "Host key file, created if it does not exist").withRequiredArg()
                 .ofType(File.class).describedAs("hostkey-storage").required();
-        OPT_ROOT = PARSER
-                .acceptsAll(Arrays.asList("root", "r"),
-                        "Path to mount point/share of common filesystem with client machines")
-                .withRequiredArg().ofType(File.class).describedAs("root").required();
         PARSER.acceptsAll(Arrays.asList("help", "?"), "show this help").forHelp();
     }
-
-    private static File serverRoot = null;
 
     /**
      * Main entry point into the application. Sets up global things and starts the SSH server. The
@@ -88,12 +81,6 @@ public class Main {
             return;
         }
 
-        // remember the server root mapping.
-        serverRoot = opts.valueOf(OPT_ROOT);
-        if (!serverRoot.isDirectory()) {
-            throw new IllegalArgumentException("server root directory must exist");
-        }
-
         // setup the ssh server with some defaults and the options given on the command line.
         log.info("starting REX server");
         SshServer server = SshServer.setUpDefaultServer();
@@ -118,10 +105,6 @@ public class Main {
 
         server.setPort(opts.valueOf(OPT_PORT));
         server.start();
-    }
-
-    public static File getServerRoot() {
-        return serverRoot;
     }
 
     public static RexCommandFactory getCommandFactory() {
