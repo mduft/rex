@@ -52,10 +52,11 @@ public class ExecCommand extends InvertedShellWrapper {
 		PARSER.formatHelpWith(CrNlHelpFormatter.INSTANCE);
 
 		OPT_ROOT = PARSER
-				.accepts("roots",
+				.accepts(
+						"roots",
 						"mappings of server-paths to client-paths, each mapping sperated by ';', groups separated by ','")
-				.withRequiredArg().describedAs("server-path;client-path,...").withValuesSeparatedBy(',')
-				.required();
+				.withRequiredArg().describedAs("server-path;client-path,...")
+				.withValuesSeparatedBy(',').required();
 		OPT_PWD = PARSER
 				.accepts("pwd",
 						"path within mount point to set as current working directory")
@@ -90,12 +91,15 @@ public class ExecCommand extends InvertedShellWrapper {
 					"missing string 'exec' in first argument");
 		}
 
-		OptionSet opts = PARSER.parse(Arrays.copyOfRange(command, 1,
-				command.length));
+		OptionSet opts;
+		synchronized (PARSER) {
+			opts = PARSER.parse(Arrays.copyOfRange(command, 1, command.length));
+		}
 
-		Map<String, String> rootMappings = ArgumentProcessor.getRootMappingsFromArgument(opts.valuesOf(OPT_ROOT));
-
+		Map<String, String> rootMappings = ArgumentProcessor
+				.getRootMappingsFromArgument(opts.valuesOf(OPT_ROOT));
 		List<?> nonOpts = opts.nonOptionArguments();
+
 		return new ProcessExecutor(nonOpts.toArray(new String[nonOpts.size()]),
 				rootMappings, opts.valueOf(OPT_PWD),
 				OsUtils.isUNIX() ? TTY_UNIX : TTY_WIN32);

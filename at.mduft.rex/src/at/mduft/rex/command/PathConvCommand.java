@@ -61,7 +61,9 @@ public class PathConvCommand extends SimpleCommand {
 	 *            the raw arguments containing the operation to perform.
 	 */
 	public PathConvCommand(String[] arguments) {
-		this.opts = PARSER.parse(arguments);
+		synchronized (PARSER) {
+			this.opts = PARSER.parse(arguments);
+		}
 	}
 
 	@Override

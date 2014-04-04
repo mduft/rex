@@ -108,15 +108,15 @@ public class ProcessExecutor implements InvertedShell {
 			throw new IllegalArgumentException("no command given");
 		}
 
-		if (!proc.isPathInJail(command[0])) {
+		if (!proc.isPathInJail(command[0]) && ArgumentProcessor.isPathAbsolute(command[0])) {
 			throw new IllegalArgumentException(
-					"it is not allowed to escape prison (executable must be within one of the mapped paths)!");
+					"it is not allowed to escape prison (executable (" + command[0] + ") must be within one of the mapped paths)!");
 		}
 
 		if (!ArgumentProcessor.isPathAbsolute(clientPwd)
 				|| !proc.isPathInJail(clientPwd)) {
 			throw new IllegalArgumentException(
-					"it is not allowed to escape prison (current directory must be within one of the mapped paths)!");
+					"it is not allowed to escape prison (current directory (" + clientPwd + ") must be within one of the mapped paths)!");
 		}
 	}
 
