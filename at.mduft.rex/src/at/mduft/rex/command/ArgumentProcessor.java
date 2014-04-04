@@ -107,7 +107,9 @@ public class ArgumentProcessor {
 			}
 		}
 
-		if (cmds[0].startsWith(".")) {
+		if (cmds[0].startsWith("..")) {
+			cmds[0] = transformPath(pwd + "/" + cmds[0], true);
+		} else if (cmds[0].startsWith(".")) {
 			cmds[0] = transformPath(pwd + cmds[0].substring(1), true);
 		}
 		return cmds;
@@ -250,20 +252,22 @@ public class ArgumentProcessor {
 	}
 
 	/**
-	 * Split raw root mappings into a {@link Map}, client path as key, server path as value.
+	 * Split raw root mappings into a {@link Map}, client path as key, server
+	 * path as value.
 	 */
-	public static Map<String, String> getRootMappingsFromArgument(List<String> rawMappings) {
+	public static Map<String, String> getRootMappingsFromArgument(
+			List<String> rawMappings) {
 		Map<String, String> rootMappings = new TreeMap<>();
-	
+
 		// TODO: check for "allowed" to be save against jailbreaks!
-		
+
 		for (String raw : rawMappings) {
 			String split[] = raw.split(";");
 			if (split.length != 2) {
 				throw new IllegalStateException("invalid roots argument: '"
 						+ raw + "', should be 'server-path;client-path'");
 			}
-	
+
 			for (int i = 0; i < 2; ++i) {
 				if (!isPathAbsolute(split[i])) {
 					throw new IllegalStateException(
@@ -271,7 +275,7 @@ public class ArgumentProcessor {
 									+ split[i]);
 				}
 			}
-			
+
 			// client path is key for faster lookup, server path is value.
 			rootMappings.put(split[1], split[0]);
 		}
