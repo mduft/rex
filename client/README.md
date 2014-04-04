@@ -40,10 +40,37 @@ have to (as root):
 This will result in minimum roundtrips slightly below 100ms from call to return with
 a file existing on the client that was created on the server.
 
-Symbolic links when sharing a filesystem
-========================================
+Sharing multiple filesystems
+============================
 
-(NOTE: a better way of overcoming this issues is described in the next (new) chapter)
+A typical scenario for REX is to be able to execute a binary on the server that writes
+a file that the client will read afterwards. This has a few problems (caching, symlinks, ...)
+as described above. To be able to take full advantage of the capabilities of each system
+we typically want to:
+ * be able to find binaries on the server (thus we need to somehow mount it's root fs)
+ * be able to take advantage of the power of a local filesystem for "work" folders.
+
+This leads to a setup where server and client mount each others shares in a "criss cross"
+setup. I.e. the client mounts the servers share to get access to the binaries (and adds
+paths in this share to it's PATH), and the server mounts the clients share to be able
+to write output files directly to that filesystem.
+
+In case the host cannot use symlinks (Windows), the client still can on his share.
+
+REX supports this scenario by allowing to map multiple roots. The configuration happens
+on the client side, so that multiple clients could go with different setups. The server
+is completely stateless, except for restricting the allowed root mappings.
+
+This can be configured in config.sh like
+
+ `REX_ROOTS='C:\;/some/path,F:\;/another/path'`
+
+All paths in '/some/path/...' will be mapped to 'C:\...', etc.
+
+(Deprecated) Symbolic links when sharing a single filesystem
+============================================================
+
+(NOTE: a better way of overcoming this issues is described in the previous (new) chapter)
 
 SMB/CIFS can not currently do symlinks on mounts served from windows (please prove
 me wrong!). To overcome this (as symlinks are often required in builds, etc.), the
@@ -70,13 +97,4 @@ dramatically. Useful information can be found here:
 I suggest deactivating the directory cache by setting 
 `HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime` to 0
 
-Sharing multiple filesystems
-============================
 
-To overcome issues with mounting, symlinks, etc. it may be necessary to share multiple filesystems, one
-mounted on the server, one mounted on the client. To be able to do so, REX accepts multiple root mappings
-in the current version. This can be configured in config.sh like
-
- REX_ROOTS='C:\;/some/path,F:\;/another/path'
-
-All paths in '/some/path/...' will be mapped to 'C:\...', etc.
