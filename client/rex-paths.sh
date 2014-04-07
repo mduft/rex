@@ -1,9 +1,9 @@
 function doConvert() {
     local sourceRoot="$1"
-    local targetRoot="$2"
+    local targetRoot="$2/"
     local path="$3"
 
-    [[ ${path} != ${sourceRoot}* ]] && {
+    [[ "${path}" != "${sourceRoot}"* ]] && {
         echo "ERROR: path is not inside target root ('${path}' is not a child of '${sourceRoot}')" 1>&2
         exit 1
     }
@@ -47,10 +47,10 @@ function findRoot() {
         local client=
         eval $(splitRoot "${pair}")
 
-        if [[ ${toServer} == yes && ${path} == ${client}* ]]; then
+        if [[ ${toServer} == yes && "${path}" == "${client}"* ]]; then
             echo "source='${client}'"
             echo "target='${server}'"
-        elif [[ ${toServer} == no && ${path} == ${server}* ]]; then
+        elif [[ ${toServer} == no && "${path}" == "${server}"* ]]; then
             echo "source='${server}'"
             echo "target='${client}'"
         else
