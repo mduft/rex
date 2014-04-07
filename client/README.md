@@ -67,6 +67,10 @@ This can be configured in config.sh like
 
 All paths in '/some/path/...' will be mapped to 'C:\...', etc.
 
+NOTE: In this setup it might not be necessary to disable caching on the client side for
+the server mount, as only executables will be read from this share. Less caching is only
+neccessary on mounts that are used for high frequency file create/wait operations.
+
 (Deprecated) Symbolic links when sharing a single filesystem
 ============================================================
 
