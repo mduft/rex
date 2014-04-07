@@ -3,7 +3,7 @@
 HOME=$(cd $(dirname $0); pwd)
 EXEC_DIR=$(pwd)
 
-. ${HOME}/config.sh
+. ${HOME}/rex-config.sh
 
 if [[ ${EXEC_DIR} != ${REX_ROOT}* ]]; then
     echo "error: current directory not inside REX client root"

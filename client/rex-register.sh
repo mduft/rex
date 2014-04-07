@@ -8,7 +8,7 @@ binfmt=/proc/sys/fs/binfmt_misc
 [[ $(id -u) != 0 ]] && { echo "$0 must be run as root!"; exit 1; }
 [[ ! -d ${binfmt} || $(cat ${binfmt}/status) != enabled ]] && { echo "CONFIG_BINFMT_MISC must be enabled in the kernel!"; exit 1; }
 
-script="$(cd "$(dirname "$0")"; pwd)/binfmt-misc.sh"
+script="$(cd "$(dirname "$0")"; pwd)/rex-exec.sh"
 
 for type in REXexe REXcmd REXbat; do
     [[ -e ${binfmt}/${type} ]] && echo -1 > ${binfmt}/${type}
