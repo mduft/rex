@@ -16,11 +16,11 @@ that are used to maintain a certain level of SUA compatibility are reachable.
 
 To register the binfmt-misc handler with linux:
 
-`echo ":REXexe:M::MZ::/path/to/binfmt-misc.sh:" > /proc/sys/fs/binfmt_misc/register`
-`echo ":REXcmd:E::cmd::/path/to/binfmt-misc.sh:" > /proc/sys/fs/binfmt_misc/register`
-`echo ":REXbat:E::bat::/path/to/binfmt-misc.sh:" > /proc/sys/fs/binfmt_misc/register`
+ `sudo ./register.sh`
 
-Be aware that the extension for .cmd and .bat are case sensitive! So you might need more.
+Be aware that the extension for .cmd and .bat are case sensitive! register.sh only
+registers the lower case variant. If you need more, you might need additional lines
+in register.sh, you can add them by just copying an existing one
 
 Sharing a filesystem
 ====================
