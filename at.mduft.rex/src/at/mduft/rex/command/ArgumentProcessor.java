@@ -226,7 +226,7 @@ public class ArgumentProcessor {
 			String target = toServer ? mapping.getValue() + "/" : mapping
 					.getKey() + "/";
 
-			Pattern sourcePattern = Pattern.compile(source, Pattern.LITERAL);
+			Pattern sourcePattern = Pattern.compile("(?<![/\\\\w\\d])" + Pattern.quote(source));
 			Matcher matcher = sourcePattern.matcher(arg);
 			if (matcher.find()) {
 				String result = matcher.replaceFirst(Matcher

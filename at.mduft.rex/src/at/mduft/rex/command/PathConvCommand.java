@@ -9,6 +9,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -21,6 +24,7 @@ import at.mduft.rex.util.HelpAppender;
  */
 public class PathConvCommand extends SimpleCommand {
 
+	private static final Logger log = LoggerFactory.getLogger(PathConvCommand.class);
 	private static final OptionParser PARSER;
 	private final OptionSet opts;
 	private static final ArgumentAcceptingOptionSpec<String> OPT_ROOTS;
@@ -74,6 +78,7 @@ public class PathConvCommand extends SimpleCommand {
 		try (PrintWriter wr = new PrintWriter(out)) {
 			for (String x : opts.valuesOf(OPT_TOSERVER)) {
 				String path = proc.transformPath(x, true);
+				log.info("convert path: " + x + " -> " + path);
 				if (opts.has(OPT_CHECKSERVER)) {
 					File f = new File(path);
 					if (!f.exists()) {
