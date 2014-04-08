@@ -14,7 +14,7 @@ function doConvert() {
     local sep="/"
     [[ ${targetRoot} == *":"* ]] && sep="\\\\"
 
-    echo "${path//${sourceRoot}/${targetRoot}}" | sed -e "s,[\\/][\\/]*,${sep},g"
+    echo "${path/${sourceRoot}/${targetRoot}}" | sed -e "s,[\\/][\\/]*,${sep},g"
 }
 
 function splitRoot() {
