@@ -132,10 +132,27 @@ public class ArgumentProcessor {
 				continue;
 			}
 
-			if (!BAD_VARS.contains(key)) {
-				target.put(key, entry.getValue());
+			if (BAD_VARS.contains(key)) {
+				continue;
 			}
+			
+			if(key.startsWith("_REX_")) {
+				key = key.substring("_REX_".length());
+			}
+			
+			target.put(key, entry.getValue());
 		}
+
+		// build rex root information and export.
+		StringBuilder builder = new StringBuilder();
+		for (Map.Entry<String, String> mapping : rootMappings.entrySet()) {
+			if (builder.length() > 0) {
+				builder.append(',');
+			}
+			builder.append(mapping.getValue()).append(';')
+					.append(mapping.getKey());
+		}
+		target.put("REX_ROOTS", builder.toString());
 
 		processPath(target);
 	}
@@ -226,7 +243,8 @@ public class ArgumentProcessor {
 			String target = toServer ? mapping.getValue() + "/" : mapping
 					.getKey() + "/";
 
-			Pattern sourcePattern = Pattern.compile("(?<![/\\\\w\\d])" + Pattern.quote(source));
+			Pattern sourcePattern = Pattern.compile("(?<![/\\\\w\\d])"
+					+ Pattern.quote(source));
 			Matcher matcher = sourcePattern.matcher(arg);
 			if (matcher.find()) {
 				String result = matcher.replaceFirst(Matcher
