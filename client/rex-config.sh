@@ -1,9 +1,9 @@
 ### CONFIGURATION FOR REX CLIENT SIDE ###
 
-export REX_SERVER=172.28.8.174
+export REX_SERVER=<hostname>
 export REX_PORT=9000
 export REX_USER=rex
-export REX_ROOTS='C:\;/big/rex,F:\;/ssd/tools'
+export REX_ROOTS='C:\;/mnt/C,D:\;/work'
 
 # ATTENTION: all scripts use this variable to assure that the SSH options
 #   are the same for all connections. This is essential when sharing connections
