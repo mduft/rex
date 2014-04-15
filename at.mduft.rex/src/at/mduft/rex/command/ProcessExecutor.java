@@ -91,10 +91,12 @@ public class ProcessExecutor implements InvertedShell {
 		builder.directory(new File(proc.transformPath(clientPwd, true)));
 
 		log.info("starting '{}'", builder.command());
+		long start = System.currentTimeMillis();
 		process = builder.start();
 		out = new TtyFilterInputStream(process.getInputStream());
 		err = new TtyFilterInputStream(process.getErrorStream());
 		in = new TtyFilterOutputStream(process.getOutputStream(), err);
+		System.out.println("start took " + (System.currentTimeMillis() - start) + "ms.");
 	}
 
 	/**
@@ -137,20 +139,24 @@ public class ProcessExecutor implements InvertedShell {
 
 	@Override
 	public boolean isAlive() {
+		log.trace("check alive");
 		if (process == null) {
 			return false;
 		}
 
 		try {
 			process.exitValue();
+			log.trace("no");
 			return false;
 		} catch (IllegalThreadStateException e) {
+			log.trace("yes");
 			return true;
 		}
 	}
 
 	@Override
 	public int exitValue() {
+		log.trace("get exit value");
 		if (process == null) {
 			return -1;
 		}

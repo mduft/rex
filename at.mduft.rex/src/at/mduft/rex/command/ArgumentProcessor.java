@@ -25,6 +25,8 @@ public class ArgumentProcessor {
 	private static final Pattern SLASH_FIXER = Pattern.compile("[/\\\\]+");
 	private static final String VAR_PATH = "PATH";
 	private static final List<String> BAD_VARS = Arrays.asList("TMP", "TEMP");
+	private static final List<String> PLIST_VARS = Arrays
+			.asList("LD_LIBRARY_PATH");
 
 	/**
 	 * holds mappings of client path to server path. client path is the key,
@@ -107,6 +109,7 @@ public class ArgumentProcessor {
 			}
 		}
 
+		// TODO: security problem: relative paths with .. in them.
 		if (cmds[0].startsWith("..")) {
 			cmds[0] = transformPath(pwd + "/" + cmds[0], true);
 		} else if (cmds[0].startsWith(".")) {
@@ -135,11 +138,11 @@ public class ArgumentProcessor {
 			if (BAD_VARS.contains(key)) {
 				continue;
 			}
-			
-			if(key.startsWith("_REX_")) {
+
+			if (key.startsWith("_REX_")) {
 				key = key.substring("_REX_".length());
 			}
-			
+
 			target.put(key, entry.getValue());
 		}
 
@@ -155,6 +158,10 @@ public class ArgumentProcessor {
 		target.put("REX_ROOTS", builder.toString());
 
 		processPath(target);
+
+		for (String var : PLIST_VARS) {
+			processPathVar(target, var, null);
+		}
 	}
 
 	/**
@@ -172,14 +179,37 @@ public class ArgumentProcessor {
 			return;
 		}
 
-		StringBuilder finalPath = new StringBuilder(serverPath);
+		processPathVar(environment, VAR_PATH, serverPath);
+	}
+
+	/**
+	 * Cleans up a path-list variable (like PATH, LD_LIBRARY_PATH, ...)
+	 * 
+	 * @param environment
+	 *            the envrionment to query/modify
+	 * @param pathVar
+	 *            the variable to cleanup
+	 * @param initValue
+	 *            the initial value that should be prepended to the processed
+	 *            value.
+	 */
+	private void processPathVar(Map<String, String> environment,
+			String pathVar, String initValue) {
+		String clientPath = environment.get(pathVar);
+		if (clientPath == null || clientPath.isEmpty()) {
+			return;
+		}
+		StringBuilder finalPath = new StringBuilder(initValue == null ? ""
+				: initValue);
+
 		String clientPaths[] = clientPath.split(getClientPathSep());
 		for (String p : clientPaths) {
 			if (p == null || p.isEmpty()) {
 				continue;
 			}
 
-			if (isPathInJail(p)) {
+			// TODO: security problem: relative paths with .. in them.
+			if (!isPathAbsolute(p) || isPathInJail(p)) {
 				finalPath.append(getServerPathSep()).append(
 						transformPath(p, true));
 			} else {
@@ -187,7 +217,7 @@ public class ArgumentProcessor {
 			}
 		}
 
-		environment.put(VAR_PATH, finalPath.toString());
+		environment.put(pathVar, finalPath.toString());
 	}
 
 	/**
