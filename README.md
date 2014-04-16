@@ -7,6 +7,8 @@ Each server and each client has a "root" offset that is to be configured as comm
 
 Here is a demo of REX in action: http://www.youtube.com/watch?v=GGsWSY1oJVw
 
+ATTENTION: Since this is still in early development, there *ARE* for sure security holes, even known ones.
+
 Used & bundled third party libraries
 ====================================
 
