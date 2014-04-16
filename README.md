@@ -12,7 +12,7 @@ ATTENTION: Since this is still in early development, there *ARE* for sure securi
 Used & bundled third party libraries
 ====================================
 
-The following libraries are used (and re-packed into the final JAR). Please see their respective licenses for more information.
+The following libraries are used. Please see their respective licenses for more information.
 
  * jopt-simple-4.6.jar          (--jopt-simple)
  * slf4j-api-1.7.6.jar          (SLF4J API)
