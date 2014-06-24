@@ -3,6 +3,11 @@
  */
 package at.mduft.rex.command;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +120,22 @@ public class ArgumentProcessor {
 		} else if (cmds[0].startsWith(".")) {
 			cmds[0] = transformPath(pwd + cmds[0].substring(1), true);
 		}
+		
+		Path p = Paths.get(cmds[0]);
+		if(Files.isSymbolicLink(p)) {
+			try {
+				cmds[0] = Files.readSymbolicLink(p).toString();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		File f = new File(cmds[0] + ".exe");
+		if(f.exists()) {
+			cmds[0] = f.toString();
+		}
+		
 		return cmds;
 	}
 
